@@ -1,0 +1,513 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The region to deploy PT Application Firewall"
+      }
+    },
+    "virtualMachineName": {
+      "type": "string",
+      "defaultValue": "ptaf-vm",
+      "metadata": {
+        "description": "Ptaf vitrual machine name."
+      }
+    },
+    "virtualMachineSize": {
+      "type": "string",
+      "defaultValue": "Standard_A4",
+      "metadata": {
+        "description": "Size of the ptaf vm azure instance"
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "pt",
+      "metadata": {
+        "description": "User name for the Virtual Machine."
+      }
+    },
+    "newOrExistingStorageAccount": {
+      "type": "string",
+      "allowedValues": [
+        "new",
+        "existing"
+      ],
+      "defaultValue": "new",
+      "metadata": {
+        "description": "Use new to create new account and existing to reuse an existing one"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "ptafstorage",
+      "metadata": {
+        "description": "Storage account name"
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS"
+      ],
+      "metadata": {
+        "description": "Type of the azure storage account"
+      }
+    },
+    "storageAccountExistingRG": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Storage Account's Resource Group"
+      }
+    },
+    "newOrExistingVirtualNetwork": {
+      "type": "string",
+      "allowedValues": [
+        "new",
+        "existing"
+      ],
+      "defaultValue": "new",
+      "metadata": {
+        "description": "Use new to create new virtualNetwork and existing to reuse an existing one"
+      }
+    },
+    "virtualNetworkExistingRG": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "virtualNetwork Account's Resource Group"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "ptaf-vnet",
+      "metadata": {
+        "description": "virtual network name"
+      }
+    },
+    "vnetMask": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "virtual network mask"
+      }
+    },
+    "wanAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/24",
+      "metadata": {
+        "description": "wan subnet mask"
+      }
+    },
+    "lanAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.1.0/24",
+      "metadata": {
+        "description": "lan subnet mask"
+      }
+    },
+    "lanName": {
+      "type": "string",
+      "defaultValue": "LAN",
+      "metadata": {
+        "description": "lan subnet name"
+      }
+    },
+    "wanName": {
+      "type": "string",
+      "defaultValue": "WAN",
+      "metadata": {
+        "description": "wan subnet mask"
+      }
+    },
+    "dnsLabelPrefix": {
+      "type": "string",
+      "defaultValue": "ptaf-yourdnsname",
+      "metadata": {
+        "description": "string to generate prefix for public ip adress"
+      }
+    },
+    "publicIPAddressName": {
+      "defaultValue": "ptaf-ip",
+      "type": "string",
+      "metadata": {
+        "description": "name of public ip adress"
+      }
+    },
+    "authenticationType": {
+      "type": "string",
+      "allowedValues": [
+        "sshPublicKey",
+        "password"
+      ],
+      "defaultValue": "password",
+      "metadata": {
+        "description": "authentication type (key or password)"
+      }
+    },
+    "sshKey": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "rsa public key for ssh"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Password for admin username"
+      }
+    },
+    "license": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "PT AF license key. You can left it empty and apply your license later"
+      }
+    },
+    "baseUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "The base url for dependent assets",
+        "artifactsBaseUrl": ""
+      },
+      "defaultValue": "https://raw.githubusercontent.com/capgelka/ptaf-azure/release-3.6.2"
+    },
+    "osDiskVhdUri": {
+      "type": "string",
+      "metadata": {
+        "description": "Uri of the existing VHD"
+      }
+    }
+  },
+  "variables": {
+    "imagePublisher": "ptsecurity",
+    "imageSku": "byol",
+    "imageOffer": "ptaf-vm",
+    "imageVersion": "3.6.4",
+    "publicIPAddressType": "Static",
+    "wanNetworkInterfaceName": "ptaf-ni-wan",
+    "lanNetworkInterfaceName": "ptaf-ni-lan",
+    "networkSecurityGroupName": "ptaf-nsg",
+    "deploymentName": "ptaf-deploy",
+    "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id, deployment().name))]",
+    "singleQuote": "'",
+    "extensionCommand": "[concat('sh -c ', variables('singleQuote'), './network_settings.sh ', parameters('virtualMachineName'), ' ', parameters('license'), variables('singleQuote'))]",
+    "commandsUris": [
+      "[concat(parameters('baseUrl'), '/scripts/network_settings.sh')]",
+      "[concat(parameters('baseUrl'), '/scripts/ptaf_api_settings.py')]"
+    ],
+    "storageAccountTemplateUrl": "[concat(parameters('baseUrl'), '/ptaf-storage-account-', parameters('newOrExistingStorageAccount'),'.json')]",
+    "virtualNetworkTemplateUrl": "[concat(parameters('baseUrl'), '/ptaf-network-', parameters('newOrExistingVirtualNetwork'), '.json')]",
+    "vmTemplateUrl": "[concat(parameters('baseUrl'), '/ptaf-vm-', parameters('authenticationType'),'.json')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('networkSecurityGroupName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "Network Security Group"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ssh-rule",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22013",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "ui-rule",
+            "properties": {
+              "description": "Allow UI",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "8443",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "http-rule",
+            "properties": {
+              "description": "Allow http",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "https-rule",
+            "properties": {
+              "description": "Allow https",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 103,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "graphite-rule",
+            "properties": {
+              "description": "Allow graphite from virtual network",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "8082",
+              "sourceAddressPrefix": "[parameters('vnetMask')]",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 105,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "storageAcountSetup",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('storageAccountTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "storageAccountType": {
+            "value": "[parameters('storageAccountType')]"
+          },
+          "storageAccountName": {
+            "value": "[parameters('storageAccountName')]"
+          },
+          "storageAccountExistingRG": {
+            "value": "[parameters('storageAccountExistingRG')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[parameters('publicIPAddressName')]",
+      "apiVersion": "2016-03-30",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('dnsPrefix')]"
+        }
+      }
+    },
+    {
+      "name": "virtualNetworkSetup",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ],
+      "properties": {
+        "templateLink": {
+          "uri": "[variables('virtualNetworkTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "virtualNetworkExistingRG": {
+            "value": "[parameters('virtualNetworkExistingRG')]"
+          },
+          "networkSecurityGroupName": {
+            "value": "[variables('networkSecurityGroupName')]"
+          },
+          "vnetName": {
+            "value": "[parameters('vnetName')]"
+          },
+          "vnetMask": {
+            "value": "[parameters('vnetMask')]"
+          },
+          "wanAddressPrefix": {
+            "value": "[parameters('wanAddressPrefix')]"
+          },
+          "lanAddressPrefix": {
+            "value": "[parameters('lanAddressPrefix')]"
+          },
+          "lanName": {
+            "value": "[parameters('lanName')]"
+          },
+          "wanName": {
+            "value": "[parameters('wanName')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('wanNetworkInterfaceName')]",
+      "apiVersion": "2016-03-30",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddressName'))]",
+        "virtualNetworkSetup"
+      ],
+      "properties": {
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "wanIpConfig",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[concat(reference('virtualNetworkSetup').outputs.virtualNetworkId.value, '/subnets/', parameters('wanName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('lanNetworkInterfaceName')]",
+      "apiVersion": "2016-03-30",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "virtualNetworkSetup"
+      ],
+      "properties": {
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "lanApiConfig",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[concat(reference('virtualNetworkSetup').outputs.virtualNetworkId.value, '/subnets/', parameters('lanName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('deploymentName')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
+      "dependsOn": [
+        "storageAcountSetup",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('wanNetworkInterfaceName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('lanNetworkInterfaceName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('vmTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "storageAccountName": {
+            "value": "[parameters('storageAccountName')]"
+          },
+          "virtualMachineName": {
+            "value": "[parameters('virtualMachineName')]"
+          },
+          "imageSku": {
+            "value": "[variables('imageSku')]"
+          },
+          "imageOffer": {
+            "value": "[variables('imageOffer')]"
+          },
+          "imagePublisher": {
+            "value": "[variables('imagePublisher')]"
+          },
+          "imageVersion": {
+            "value": "[variables('imageVersion')]"
+          },
+          "wanNetworkInterfaceName": {
+            "value": "[variables('wanNetworkInterfaceName')]"
+          },
+          "lanNetworkInterfaceName": {
+            "value": "[variables('lanNetworkInterfaceName')]"
+          },
+          "virtualMachineSize": {
+            "value": "[parameters('virtualMachineSize')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "sshKey": {
+            "value": "[parameters('sshKey')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('virtualMachineName'),'/ptafConfig')]",
+      "apiVersion": "2015-06-15",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/deployments/', variables('deploymentName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.OSTCExtensions",
+        "type": "CustomScriptForLinux",
+        "typeHandlerVersion": "1.5",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": "[variables('commandsUris')]",
+          "commandToExecute": "[variables('extensionCommand')]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "adminUsername": {
+      "type": "string",
+      "value": "[parameters('adminUsername')]"
+    }
+  }
+}
