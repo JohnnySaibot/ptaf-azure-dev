@@ -1,0 +1,221 @@
+{
+  "handler": "Microsoft.Compute.MultiVm",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "basics": [
+      {
+        "name": "adminUsername",
+        "type": "Microsoft.Compute.UserNameTextBox",
+        "label": "Username",
+        "defaultValue": "pt",
+        "toolTip": "Admin username for PT Application Firewall",
+        "osPlatform": "Linux"
+      },
+      {
+        "name": "SSHCredentials",
+        "type": "Microsoft.Compute.CredentialsCombo",
+        "label": {
+                  "authenticationType": "Authentication type",
+                  "password": "Password",
+                  "confirmPassword": "Confirm password",
+                  "sshPublicKey": "SSH public key"
+                },
+        "toolTip": {
+                "authenticationType": "Type of authentification for ssh access",
+                "password": "Password for ssh access",
+                "sshPublicKey": "Public key for ssh access"
+              },
+        "constraints": {
+                "required": true
+              },
+        "options": {
+              "hideConfirmation": false
+         },
+        "osPlatform": "Linux"
+      }
+    ],
+    "steps": [
+      {
+        "name": "envconfig",
+        "label": "Environment",
+        "subLabel": {
+          "preValidation": "Storage account, networking, etc",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "Storage and Networking",
+        "elements": [
+            {
+               "name": "newStorageAccount",
+               "type": "Microsoft.Storage.StorageAccountSelector",
+               "label": "Storage Account Name",
+               "defaultValue": {
+                   "type": "Standard_LRS"
+               },
+               "constraints": {
+                   "allowedTypes": ["Standard_LRS"]
+               }
+            },
+            {
+              "name": "newVirtualNetwork",
+              "type": "Microsoft.Network.VirtualNetworkCombo",
+              "label": {
+                "virtualNetwork": "Virtual network",
+                "subnets": "Subnets"
+              },
+              "toolTip": {
+                "virtualNetwork": "Virtual network for PT AF",
+                "subnets": "WAN and LAN subnets for PT AF vm"
+              },
+              "defaultValue": {
+                "name": "ptaf-vnet",
+                "addressPrefixSize": "/16"
+              },
+              "constraints": {
+                "minAddressPrefixSize": "/16"
+              },
+              "options": {
+                "hideExisting": false
+              },
+              "subnets": {
+                "wan": {
+                  "label": "WAN subnet",
+                  "defaultValue": {
+                    "name": "WAN",
+                    "addressPrefixSize": "/24"
+                  },
+                  "constraints": {
+                    "minAddressPrefixSize": "/24",
+                    "minAddressCount": 0,
+                    "requireContiguousAddresses": true
+                  }
+                },
+                "lan": {
+                  "label": "LAN subnet",
+                  "defaultValue": {
+                    "name": "LAN",
+                    "addressPrefixSize": "/24"
+                  },
+                  "constraints": {
+                    "minAddressPrefixSize": "/24",
+                    "minAddressCount": 0,
+                    "requireContiguousAddresses": true
+                  }
+                }
+              },
+              "visible": true
+          }
+        ]
+      },
+      {
+        "name": "PtafConfig",
+        "label": "PT Application Firewall Configuration",
+        "subLabel": {
+          "preValidation": "VM's size, name and DNS name ",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "PTAF vm Configuration",
+        "elements": [
+         {
+            "name": "dnsNameForPublicIP",
+            "type": "Microsoft.Network.PublicIpAddressCombo",
+            "label": {
+                "publicIpAddress": "Public IP address",
+                "domainNameLabel": "DNS Name"
+            },
+            "constraints": {
+              "required": {
+                 "domainNameLabel": true
+               }
+            },
+            "toolTip": {
+                "domainNameLabel": "Unique DNS name prefix for public IP of WAN interface (eth0)"
+            },
+            "defaultValue": {
+                "publicIpAddressName": "ptaf-ip",
+                "domainNameLabel": ""
+            },
+            "options": {
+                "hideNone": true,
+                "hideExisting" : true
+            }
+          },
+       {
+        "name": "virtualMachineName",
+        "type": "Microsoft.Common.TextBox",
+        "label": "PT Application Firewall virtual machine name",
+        "toolTip": "VM name and hostname in resource group after deployment",
+        "constraints": {
+            "required": true,
+            "regex": "^[a-z0-9\\-_]{8,24}$",
+            "validationMessage": "VM names must be between 8 and 24 characters long, and can contain only numbers, hyphens and underscores"
+         }
+       },
+          {
+            "name": "virtualMachineSize",
+            "type": "Microsoft.Compute.SizeSelector",
+            "label": "Virtual machine size",
+            "toolTip": "Size of Azure virtual machine to provision for PT Application Firewall",
+            "recommendedSizes": [
+              "Standard_F4",
+              "Standard_F8",
+              "Standard_F16"
+            ],
+            "constraints": {
+              "allowedSizes": [
+                "Standard_A4",
+                "Standard_A6",
+                "Standard_A7",
+                "Standard_D3_v2",
+                "Standard_D4_v2",
+                "Standard_F4",
+                "Standard_F8",
+                "Standard_F16"
+                ]
+            },
+            "osPlatform": "Linux",
+            "imageReference": {
+              "publisher": "ptsecurity",
+              "offer": "ptaf-vm-preview",
+              "sku": "byol"
+            }
+          },
+          {
+            "name": "License",
+            "type": "Microsoft.Common.TextBox",
+            "label": "PT AF license",
+            "defaultValue": "",
+            "toolTip": "PT AF license key. You can left it empty and apply your license later",
+            "constraints": {
+              "required": false
+            },
+            "visible": true
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "storageAccountName": "[steps('envconfig').newStorageAccount.name]",
+      "storageAccountType": "[steps('envconfig').newStorageAccount.type]",
+      "newOrExistingStorageAccount" : "[steps('envconfig').newStorageAccount.newOrExisting]",
+      "storageAccountExistingRG": "[steps('envconfig').newStorageAccount.resourceGroup]",
+      "publicIPAddressName": "[steps('PtafConfig').dnsNameForPublicIP.publicIPAddressName]",
+      "dnsLabelPrefix": "[steps('PtafConfig').dnsNameForPublicIP.domainNameLabel]",
+      "virtualMachineName": "[steps('PtafConfig').virtualMachineName]",
+      "adminUsername": "[basics('adminUsername')]",
+      "adminPassword": "[basics('SSHCredentials').password]",
+      "authenticationType": "[basics('SSHCredentials').authenticationType]",
+      "sshKey": "[basics('SSHCredentials').sshPublicKey]",
+      "virtualMachineSize": "[steps('PtafConfig').virtualMachineSize]",
+      "virtualNetworkExistingRG": "[steps('envconfig').newVirtualNetwork.resourceGroup]",
+      "vnetName": "[steps('envconfig').newVirtualNetwork.name]",
+      "newOrExistingVirtualNetwork": "[steps('envconfig').newVirtualNetwork.newOrExisting]",
+      "vnetMask": "[first(steps('envconfig').newVirtualNetwork.addressPrefixes)]",
+      "wanAddressPrefix": "[steps('envconfig').newVirtualNetwork.subnets.wan.addressPrefix]",
+      "lanAddressPrefix": "[steps('envconfig').newVirtualNetwork.subnets.lan.addressPrefix]",
+      "lanName": "[steps('envconfig').newVirtualNetwork.subnets.lan.name]",
+      "wanName": "[steps('envconfig').newVirtualNetwork.subnets.wan.name]",
+      "license": "[steps('PtafConfig').License]",
+      "location": "[location()]"
+    }
+  }
+}

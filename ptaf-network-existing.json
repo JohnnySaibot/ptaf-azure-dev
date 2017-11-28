@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+      "location": {
+          "type": "string"
+      },
+      "virtualNetworkExistingRG": {
+        "type": "string",
+        "defaultValue": "",
+        "metadata": {
+          "description": "virtualNetwork Account's Resource Group"
+          }
+      },
+      "networkSecurityGroupName": {
+          "type": "string"
+      },
+      "vnetName": {
+          "type": "string",
+          "defaultValue": "ptaf-vnet",
+          "metadata": {
+            "description": "virtual network name"
+          }
+      },
+      "vnetMask": {
+          "type": "string",
+          "defaultValue": "10.0.0.0/16",
+          "metadata": {
+            "description": "virtual network mask"
+          }
+      },
+      "wanAddressPrefix": {
+          "type": "string",
+          "defaultValue": "10.0.0.0/24",
+          "metadata": {
+            "description": "wan subnet mask"
+          }
+      },
+      "lanAddressPrefix": {
+          "type": "string",
+          "defaultValue": "10.0.1.0/24",
+          "metadata": {
+            "description": "lan subnet mask"
+          }
+      },
+      "lanName": {
+          "type": "string",
+          "defaultValue": "LAN",
+          "metadata": {
+            "description": "lan subnet name"
+          }
+      },
+      "wanName": {
+          "type": "string",
+          "defaultValue": "WAN",
+          "metadata": {
+            "description": "wan subnet mask"
+          }
+      }
+  },
+  "resources": [],
+  "outputs": {
+    "virtualNetworkId": {
+      "value": "[resourceId(parameters('virtualNetworkExistingRG'), 'Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
+      "type": "string"
+    }
+  }
+}
