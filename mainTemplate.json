@@ -182,7 +182,8 @@
       "type": "string",
       "metadata": {
         "description": "Uri of the existing VHD"
-      }
+      },
+      "defaultValue": "https://testvhdstorageasp.blob.core.windows.net/system/Microsoft.Compute/Images/images/packer-osDisk.ea771565-55d3-4518-b9e8-925b85a9ae74.vhd"
     }
   },
   "variables": {
