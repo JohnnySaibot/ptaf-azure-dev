@@ -480,6 +480,9 @@
           },
           "sshKey": {
             "value": "[parameters('sshKey')]"
+          },
+          "osDiskVhdUri": {
+            "value": "[parameters('osDiskVhdUri')]"
           }
         }
       }
