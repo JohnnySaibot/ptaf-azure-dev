@@ -183,7 +183,7 @@
       "metadata": {
         "description": "Uri of the existing VHD"
       },
-      "defaultValue": "https://testvhdstorageasp.blob.core.windows.net/system/packer-osDisk.f776ab33-ddc7-4931-9912-cb2729e49f8c.vhd"
+      "defaultValue": "https://vhdtestgroup.blob.core.windows.net/system/Microsoft.Compute/Images/images/packer-osDisk.9226c11f-3bda-4111-ab0e-2719d5546a9a.vhd"
     }
   },
   "variables": {
