@@ -183,7 +183,7 @@
       "metadata": {
         "description": "Uri of the existing VHD"
       },
-      "defaultValue": "https://vhdtestgroup.blob.core.windows.net/system/packer.vhd"
+      "defaultValue": ""
     }
   },
   "variables": {
