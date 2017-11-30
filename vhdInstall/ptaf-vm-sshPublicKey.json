@@ -8,7 +8,7 @@
     "virtualMachineName": {
       "type": "string"
     },
-    "storageAccountName":{
+    "storageAccountName": {
       "type": "string"
     },
     "imageSku": {
@@ -40,74 +40,67 @@
     },
     "sshKey": {
       "type": "string"
+    },
+    "osDiskVhdUri": {
+      "type": "string"
     }
   },
   "variables": {
-        "apiVersion": "2015-06-15",
-        "sshKeyPath": "[concat('/home/',parameters('adminUserName'),'/.ssh/authorized_keys')]"
+    "apiVersion": "2015-06-15",
+    "sshKeyPath": "[concat('/home/',parameters('adminUserName'),'/.ssh/authorized_keys')]"
   },
   "resources": [
     {
-        "apiVersion": "[variables('apiVersion')]",
-        "type": "Microsoft.Compute/virtualMachines",
-        "name": "[parameters('virtualMachineName')]",
-        "location": "[parameters('location')]",
-        "plan": {
-           "name": "[parameters('imageSku')]",
-           "product": "[parameters('imageOffer')]",
-           "publisher": "[parameters('imagePublisher')]"
-       },
-        "properties": {
-              "osProfile": {
-                  "computerName": "[parameters('virtualMachineName')]",
-                  "adminUsername": "[parameters('adminUsername')]",
-                  "linuxConfiguration": {
-                        "disablePasswordAuthentication": "true",
-                        "ssh": {
-                            "publicKeys": [
-                                {
-                                    "path": "[variables('sshKeyPath')]",
-                                    "keyData": "[parameters('sshKey')]"
-                                }
-                            ]
-                        }
-                    }
-                },
-              "hardwareProfile": {
-                  "vmSize": "[parameters('virtualMachineSize')]"
-                },
-              "storageProfile": {
-                 "imageReference": {
-                    "publisher": "[parameters('imagePublisher')]",
-                    "offer": "[parameters('imageOffer')]",
-                    "sku": "[parameters('imageSku')]",
-                    "version": "[parameters('imageVersion')]"
-                  },
-                 "osDisk": {
-                    "name": "osdisk",
-                    "vhd": {
-                        "uri": "[concat('https://', parameters('storageAccountName'), '.blob.core.windows.net/vhds/', parameters('virtualMachineName'), '-', parameters('imageOffer'), '-', parameters('imageSku'), '.vhd')]"
-                    },
-                  "createOption": "FromImage"
-                  }
-              },
-              "networkProfile": {
-                  "networkInterfaces": [
-                        {
-                          "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('wanNetworkInterfaceName'))]",
-                          "properties": {
-                              "primary": true
-                            }
-                        },
-                        {
-                          "properties": {
-                              "primary": false
-                            },
-                          "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('lanNetworkInterfacename'))]"
-                        }
-                    ]
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('virtualMachineName')]",
+      "location": "[parameters('location')]"
+      "properties": {
+        "osProfile": {
+          "computerName": "[parameters('virtualMachineName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": "true",
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[variables('sshKeyPath')]",
+                  "keyData": "[parameters('sshKey')]"
                 }
+              ]
             }
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('virtualMachineSize')]"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "Attach",
+            "name": "[concat(replace(parameters('virtualMachineName'),'-',''), 'osdisk')]",
+            "osType": "Linux",
+            "vhd": {
+              "uri": "[parameters('osDiskVhdUri')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('wanNetworkInterfaceName'))]",
+              "properties": {
+                "primary": true
+              }
+            },
+            {
+              "properties": {
+                "primary": false
+              },
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('lanNetworkInterfacename'))]"
+            }
+          ]
         }
-    ]
+      }
+    }
+  ]
 }
