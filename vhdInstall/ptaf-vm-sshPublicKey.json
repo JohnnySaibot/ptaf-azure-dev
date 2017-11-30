@@ -54,7 +54,7 @@
       "apiVersion": "[variables('apiVersion')]",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('virtualMachineName')]",
-      "location": "[parameters('location')]"
+      "location": "[parameters('location')]",
       "properties": {
         "osProfile": {
           "computerName": "[parameters('virtualMachineName')]",
