@@ -176,7 +176,7 @@
         "description": "The base url for dependent assets",
         "artifactsBaseUrl": ""
       },
-      "defaultValue": "https://raw.githubusercontent.com/JohnnySaibot/ptaf-azure-dev/master/mainTemplate.json"
+      "defaultValue": "https://raw.githubusercontent.com/JohnnySaibot/ptaf-azure-dev/master"
     },
     "osDiskVhdUri": {
       "type": "string",
