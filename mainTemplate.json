@@ -204,7 +204,7 @@
     ],
     "storageAccountTemplateUrl": "[concat(parameters('baseUrl'), '/ptaf-storage-account-', parameters('newOrExistingStorageAccount'),'.json')]",
     "virtualNetworkTemplateUrl": "[concat(parameters('baseUrl'), '/ptaf-network-', parameters('newOrExistingVirtualNetwork'), '.json')]",
-    "vmTemplateUrl": "[if(empty(parameters('osDiskVhdUri')), concat(parameters('baseUrl'), '/ptaf-vm-', parameters('authenticationType'),'.json'), concat(parameters('baseUrl'), '/vhdInstall/ptaf-vm-', parameters('authenticationType'),'.json'))]"
+    "vmTemplateUrl": "[concat(parameters('baseUrl'), 'vhdInstall/ptaf-vm-', parameters('authenticationType'),'.json')]"
   },
   "resources": [
     {
