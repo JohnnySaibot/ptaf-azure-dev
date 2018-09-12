@@ -44,13 +44,32 @@ fi
 
 (
     echo d # Delete
-    echo 1 # /dev/sda1
     echo n # Create new partittion
     echo p # Primary partition
-    echo   # First sector (Accept default: )
+    echo 1  # First sector (Accept default: )
     echo   # Last sector (Accept default: )
+    echo 
+    echo
+    echo y
     echo w # Write changes
 ) | fdisk /dev/sda
 
 touch /forcefsck
+
+cat << EOF > /lib/systemd/system/resize.service
+[Unit]
+Description=First boot settings
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c "resize2fs /dev/sda1 ; rm /lib/systemd/system/resize.service"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=network.target
+
+EOF
+
+systemctl enable resize.service
+
 reboot 1 # wee need wait to let azure know the deploy was succesfull
