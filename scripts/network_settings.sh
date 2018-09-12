@@ -40,3 +40,17 @@ if [ -n "${LICENSE}" ]; then
     curl -k "https://localhost:8443/license/get_config/?license_token=${LICENSE}" || exit 0
 fi
 
+# resize disk 
+
+(
+    echo d # Delete
+    echo 1 # /dev/sda1
+    echo n # Create new partittion
+    echo p # Primary partition
+    echo   # First sector (Accept default: )
+    echo   # Last sector (Accept default: )
+    echo w # Write changes
+) | fdisk /dev/sda
+
+touch /forcefsck
+reboot 1 # wee need wait to let azure know the deploy was succesfull
