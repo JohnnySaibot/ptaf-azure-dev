@@ -72,4 +72,4 @@ EOF
 
 systemctl enable resize.service
 
-reboot 1 # wee need wait to let azure know the deploy was succesfull
+shutdown -r +1 # wee need wait to let azure know the deploy was succesfull
