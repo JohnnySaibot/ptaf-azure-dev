@@ -4,6 +4,7 @@
   "parameters": {
     "location": {
       "type": "string",
+      "defaultValue": "southcentralus",
       "metadata": {
         "description": "The region to deploy PT Application Firewall"
       }
@@ -35,14 +36,14 @@
         "new",
         "existing"
       ],
-      "defaultValue": "new",
+      "defaultValue": "existing",
       "metadata": {
         "description": "Use new to create new account and existing to reuse an existing one"
       }
     },
     "storageAccountName": {
       "type": "string",
-      "defaultValue": "ptafstorage",
+      "defaultValue": "ptpackerstorage",
       "metadata": {
         "description": "Storage account name"
       }
@@ -59,7 +60,7 @@
     },
     "storageAccountExistingRG": {
       "type": "string",
-      "defaultValue": "",
+      "defaultValue": "packer-rg",
       "metadata": {
         "description": "Storage Account's Resource Group"
       }
