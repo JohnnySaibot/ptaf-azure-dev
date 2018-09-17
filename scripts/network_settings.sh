@@ -11,13 +11,9 @@ fi
 rm /opt/waf/conf/wsc/snapshots/default.sqlite3 || echo 'wsc snapshot does not exist'
 rm /opt/waf/conf/wsc/config.sqlite3 || echo 'wsc snapshot does not exist'
 
-sed -i "s@LICENSE_SERVER_REST_API.*@LICENSE_SERVER_REST_API = 'https://ptaf-license.ptsecurity.com/api/v3'@g" \
-        /opt/waf/python/lib/python2.7/site-packages/ui/config.py
-
-
-sed -i "s@/opt/waf/artifacts/.*@ @g" /etc/rc.local
-
-
+# we need old hostname for rabbitwork
+hostnamectl set-hostname 'ptaf-vm'
+systemctl restart rabbitmq-server.service
 
 WSC_MGMT_INTERFACE=eth0 WSC_WAN_INTERFACE=eth0 WSC_LAN_INTERFACE=eth1 \
 /usr/local/bin/wsc -e <<EOF
@@ -44,3 +40,36 @@ if [ -n "${LICENSE}" ]; then
     curl -k "https://localhost:8443/license/get_config/?license_token=${LICENSE}" || exit 0
 fi
 
+# resize disk 
+
+(
+    echo d # Delete
+    echo n # Create new partittion
+    echo p # Primary partition
+    echo 1  # First sector (Accept default: )
+    echo   # Last sector (Accept default: )
+    echo 
+    echo
+    echo y
+    echo w # Write changes
+) | fdisk /dev/sda
+
+touch /forcefsck
+
+cat << EOF > /lib/systemd/system/resize.service
+[Unit]
+Description=First boot settings
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c "resize2fs /dev/sda1 ; rm /lib/systemd/system/resize.service"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=network.target
+
+EOF
+
+systemctl enable resize.service
+
+shutdown -r +1 # wee need wait to let azure know the deploy was succesfull

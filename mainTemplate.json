@@ -4,6 +4,7 @@
   "parameters": {
     "location": {
       "type": "string",
+      "defaultValue": "southcentralus",
       "metadata": {
         "description": "The region to deploy PT Application Firewall"
       }
@@ -35,14 +36,14 @@
         "new",
         "existing"
       ],
-      "defaultValue": "new",
+      "defaultValue": "existing",
       "metadata": {
         "description": "Use new to create new account and existing to reuse an existing one"
       }
     },
     "storageAccountName": {
       "type": "string",
-      "defaultValue": "ptafstorage",
+      "defaultValue": "ptpackerstorage",
       "metadata": {
         "description": "Storage account name"
       }
@@ -59,7 +60,7 @@
     },
     "storageAccountExistingRG": {
       "type": "string",
-      "defaultValue": "",
+      "defaultValue": "packer-rg",
       "metadata": {
         "description": "Storage Account's Resource Group"
       }
@@ -176,7 +177,7 @@
         "description": "The base url for dependent assets",
         "artifactsBaseUrl": ""
       },
-      "defaultValue": "https://raw.githubusercontent.com/JohnnySaibot/ptaf-azure-dev/master"
+      "defaultValue": "https://raw.githubusercontent.com/capgelka/ptaf-azure-dev/master"
     },
     "osDiskVhdUri": {
       "type": "string",
@@ -200,12 +201,11 @@
     "singleQuote": "'",
     "extensionCommand": "[concat('sh -c ', variables('singleQuote'), './network_settings.sh ', parameters('virtualMachineName'), ' ', parameters('license'), variables('singleQuote'))]",
     "commandsUris": [
-      "[concat(parameters('baseUrl'), '/scripts/network_settings.sh')]",
-      "[concat(parameters('baseUrl'), '/scripts/ptaf_api_settings.py')]"
+      "[concat(parameters('baseUrl'), '/scripts/network_settings.sh')]"
     ],
     "storageAccountTemplateUrl": "[concat(parameters('baseUrl'), '/ptaf-storage-account-', parameters('newOrExistingStorageAccount'),'.json')]",
     "virtualNetworkTemplateUrl": "[concat(parameters('baseUrl'), '/ptaf-network-', parameters('newOrExistingVirtualNetwork'), '.json')]",
-    "vmTemplateUrl": "[if(empty(parameters('osDiskVhdUri')), concat(parameters('baseUrl'), '/ptaf-vm-', parameters('authenticationType'),'.json'), concat(parameters('baseUrl'), '/vhdInstall/ptaf-vm-', parameters('authenticationType'),'.json'))]"
+    "vmTemplateUrl": "[concat(parameters('baseUrl'), '/vhdInstall/ptaf-vm-', parameters('authenticationType'),'.json')]"
   },
   "resources": [
     {
